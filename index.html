@@ -724,10 +724,8 @@
     const buyForm = document.getElementById("buy-form");
     const continueBtn = document.getElementById("continue-btn");
 
-    // При загрузке форма скрыта
     buyForm.style.display = "none";
 
-    // Открываем форму по кнопке
     openFormBtn.addEventListener("click", () => {
         openFormBtn.style.display = "none";
         buyForm.style.display = "block";
@@ -738,20 +736,54 @@
         });
     });
 
-    // Проверяем email
-    continueBtn.addEventListener("click", () => {
+    continueBtn.addEventListener("click", async () => {
         const email = document.getElementById("email");
+        const phone = document.getElementById("phone").value.trim();
+        const university = document.getElementById("university").value.trim();
 
         if (!email.value.trim() || !email.checkValidity()) {
             email.reportValidity();
             return;
         }
 
-        alert("Данные приняты. Дальше подключим оплату.");
+        continueBtn.disabled = true;
+        continueBtn.textContent = "ПЕРЕХОД К ОПЛАТЕ...";
+
+        try {
+            const response = await fetch(
+                "https://librarian-unearth-carefully.ngrok-free.dev/create-payment",
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        email: email.value.trim(),
+                        phone: phone,
+                        university: university
+                    })
+                }
+            );
+
+            const data = await response.json();
+
+            if (!response.ok || !data.payment_url) {
+                throw new Error(data.error || "Не удалось создать платёж");
+            }
+
+            window.location.href = data.payment_url;
+
+        } catch (error) {
+            alert("Не удалось перейти к оплате. Попробуйте ещё раз.");
+            continueBtn.disabled = false;
+            continueBtn.textContent = "ПРОДОЛЖИТЬ";
+            console.error(error);
+        }
     });
 </script>
 
-<script>
+</script>
+
     const accordions = document.querySelectorAll(".accordion");
 
     accordions.forEach((accordion) => {
