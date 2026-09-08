@@ -793,12 +793,19 @@ continueBtn.addEventListener("click", async () => {
             })
         });
 
-    } catch (error) {
         console.error(error);
 
-        alert(
-            "Не удалось открыть оплату. Попробуйте ещё раз."
-        );
+    alert(
+        "Не удалось открыть оплату. Попробуйте ещё раз."
+    );
+} catch (error) {
+    console.error(error);
+
+    alert(
+        "ОШИБКА ОПЛАТЫ:\n" +
+        (error && error.message ? error.message : String(error))
+    );
+}
     } finally {
         continueBtn.disabled = false;
         continueBtn.textContent = "ПРОДОЛЖИТЬ";
