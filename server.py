@@ -3,7 +3,7 @@ import os
 import random
 from urllib.parse import urlencode
 
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, redirect
 from flask_cors import CORS
 from dotenv import load_dotenv
 
@@ -82,6 +82,46 @@ def create_payment():
         "order_id": inv_id
     })
 
+@app.get("/pay")
+def pay():
+    email = request.args.get("email", "").strip()
+
+    if not email:
+        return "Email обязателен", 400
+
+    if not MERCHANT_LOGIN or not PASSWORD_1:
+        return "Robokassa не настроена", 500
+
+    inv_id = random.randint(100000, 999999999)
+
+    description = f"Билет КАТАРСИС fest. Заказ {inv_id}"
+
+    signature_string = (
+        f"{MERCHANT_LOGIN}:"
+        f"{TICKET_PRICE}:"
+        f"{inv_id}:"
+        f"{PASSWORD_1}"
+    )
+
+    signature = md5(signature_string)
+
+    params = {
+        "MerchantLogin": MERCHANT_LOGIN,
+        "OutSum": TICKET_PRICE,
+        "InvId": inv_id,
+        "Description": description,
+        "SignatureValue": signature,
+        "Email": email,
+        "Culture": "ru",
+        "IsTest": "1"
+    }
+
+    payment_url = (
+        "https://auth.robokassa.ru/Merchant/Index.aspx?"
+        + urlencode(params)
+    )
+
+    return redirect(payment_url)
 
 @app.route("/payment/result", methods=["GET", "POST"])
 def payment_result():
