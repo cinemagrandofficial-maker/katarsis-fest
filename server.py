@@ -197,6 +197,37 @@ def checkout():
 
     return Response(html, mimetype="text/html")
 
+@app.post("/payment-data")
+def payment_data():
+    data = request.get_json(silent=True) or {}
+
+    email = data.get("email", "").strip()
+
+    if not email:
+        return jsonify({"error": "Email обязателен"}), 400
+
+    if not MERCHANT_LOGIN or not PASSWORD_1:
+        return jsonify({"error": "Robokassa не настроена"}), 500
+
+    inv_id = random.randint(100000, 999999999)
+
+    description = f"Билет КАТАРСИС fest. Заказ {inv_id}"
+
+    signature = md5(
+        f"{MERCHANT_LOGIN}:{TICKET_PRICE}:{inv_id}:{PASSWORD_1}"
+    )
+
+    return jsonify({
+        "MerchantLogin": MERCHANT_LOGIN,
+        "OutSum": TICKET_PRICE,
+        "InvId": inv_id,
+        "Description": description,
+        "SignatureValue": signature,
+        "Email": email,
+        "Culture": "ru",
+        "IsTest": 1
+    })
+
 @app.route("/payment/result", methods=["GET", "POST"])
 def payment_result():
     data = request.values
