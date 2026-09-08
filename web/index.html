@@ -745,15 +745,11 @@
             return;
         }
 
-        const paymentUrl =
-            "https://katarsis-payment-19903dedd.amvera.io/pay?email=" +
+        const checkoutUrl =
+            "https://katarsis-payment-19903dedd.amvera.io/checkout?email=" +
             encodeURIComponent(email.value.trim());
 
-        if (window.Telegram?.WebApp) {
-            Telegram.WebApp.openLink(paymentUrl);
-        } else {
-            window.location.href = paymentUrl;
-        }
+        window.location.href = checkoutUrl;
     });
 </script>
 
