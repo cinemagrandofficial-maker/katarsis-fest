@@ -769,7 +769,14 @@ continueBtn.addEventListener("click", async () => {
             throw new Error(data.error || "Ошибка создания платежа");
         }
 
-        Robokassa.Render({
+    if (typeof Robokassa === "undefined") {
+            alert("ОШИБКА: скрипт Robokassa не загрузился");
+            return;
+        }
+
+            alert("ROBOKASSA JS ЗАГРУЖЕН");
+
+    Robokassa.Render({
             MerchantLogin: data.MerchantLogin,
             OutSum: data.OutSum,
             InvId: data.InvId,
@@ -777,6 +784,7 @@ continueBtn.addEventListener("click", async () => {
             SignatureValue: data.SignatureValue,
             Email: data.Email,
             Culture: "ru",
+            Encoding: "utf-8",
             IsTest: 1,
 
             Settings: JSON.stringify({
