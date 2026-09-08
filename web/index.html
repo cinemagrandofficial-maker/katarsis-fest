@@ -772,8 +772,11 @@
                 throw new Error(data.error || "Не удалось создать платёж");
             }
 
-            window.location.href = data.payment_url;
-
+            if (window.Telegram?.WebApp) {
+                Telegram.WebApp.openLink(data.payment_url);
+            } else {
+                window.location.href = data.payment_url;
+            }
         } catch (error) {
             alert("Не удалось перейти к оплате. Попробуйте ещё раз.");
             continueBtn.disabled = false;
