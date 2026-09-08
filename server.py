@@ -3,7 +3,7 @@ import os
 import random
 from urllib.parse import urlencode
 
-from flask import Flask, jsonify, request, redirect
+from flask import Flask, jsonify, request, redirect, Response
 from flask_cors import CORS
 from dotenv import load_dotenv
 
@@ -122,6 +122,80 @@ def pay():
     )
 
     return redirect(payment_url)
+
+@app.get("/checkout")
+def checkout():
+    email = request.args.get("email", "").strip()
+
+    if not email:
+        return "Email обязателен", 400
+
+    if not MERCHANT_LOGIN or not PASSWORD_1:
+        return "Robokassa не настроена", 500
+
+    inv_id = random.randint(100000, 999999999)
+
+    description = f"Билет КАТАРСИС fest. Заказ {inv_id}"
+
+    signature = md5(
+        f"{MERCHANT_LOGIN}:{TICKET_PRICE}:{inv_id}:{PASSWORD_1}"
+    )
+
+    params = {
+        "MerchantLogin": MERCHANT_LOGIN,
+        "OutSum": TICKET_PRICE,
+        "InvId": inv_id,
+        "Description": description,
+        "SignatureValue": signature,
+        "Email": email,
+        "Culture": "ru",
+        "IsTest": "1"
+    }
+
+    payment_url = (
+        "https://auth.robokassa.ru/Merchant/Index.aspx?"
+        + urlencode(params)
+    )
+
+    html = f"""
+    <!DOCTYPE html>
+    <html lang="ru">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport"
+              content="width=device-width, initial-scale=1.0">
+
+        <title>Оплата — КАТАРСИС</title>
+
+        <style>
+            html, body {{
+                margin: 0;
+                padding: 0;
+                width: 100%;
+                height: 100%;
+                background: #030508;
+                overflow: hidden;
+            }}
+
+            iframe {{
+                width: 100%;
+                height: 100vh;
+                border: 0;
+                background: white;
+            }}
+        </style>
+    </head>
+
+    <body>
+        <iframe
+            src="{payment_url}"
+            allow="payment *"
+        ></iframe>
+    </body>
+    </html>
+    """
+
+    return Response(html, mimetype="text/html")
 
 @app.route("/payment/result", methods=["GET", "POST"])
 def payment_result():
