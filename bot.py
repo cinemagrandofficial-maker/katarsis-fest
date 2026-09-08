@@ -26,7 +26,7 @@ async def start(message: Message):
                 InlineKeyboardButton(
                     text="ОТКРЫТЬ КАТАРСИС FEST",
                     web_app=WebAppInfo(
-                        url="https://cinemagrandofficial-maker.github.io/katarsis-fest/"
+                        url="https://cinemagrandofficial-maker.github.io/katarsis-fest/?v=3"
                     )
                 )
             ]
