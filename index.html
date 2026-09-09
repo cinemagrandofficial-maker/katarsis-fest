@@ -53,7 +53,7 @@
             if(url.protocol!=='https:'||url.hostname!=='auth.robokassa.ru')throw new Error('Некорректная ссылка оплаты');
             readyUrl=url.href;continueBtn.textContent='ПЕРЕЙТИ К ОПЛАТЕ →';
             status.textContent='Заказ готов. Нажми кнопку: после оплаты QR-билет придёт в этот бот.';
-        }catch(error){status.textContent=error.name==='AbortError'?'Сервер не ответил. Попробуй ещё раз.':error.message;}
+        }catch(error){status.textContent=error.name==='AbortError'?'Не удалось дождаться ответа сервера. Если включён VPN, попробуй временно выключить его, вернуться сюда и снова нажать «Продолжить». Введённые данные сохранены, пока это окно открыто. Если VPN выключен — проверь интернет и повтори попытку.':error.message;}
         finally{clearTimeout(timer);continueBtn.disabled=false;}
     });
 </script><script>
