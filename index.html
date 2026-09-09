@@ -731,87 +731,32 @@
     openFormBtn.addEventListener("click", () => {
         openFormBtn.style.display = "none";
         buyForm.style.display = "block";
-
         buyForm.scrollIntoView({
             behavior: "smooth",
             block: "center"
         });
     });
 
-continueBtn.addEventListener("click", async () => {
-    const email = document.getElementById("email");
+    continueBtn.addEventListener("click", () => {
+        const email = document.getElementById("email");
+        email.value = email.value.trim();
 
-    if (!email.value.trim() || !email.checkValidity()) {
-        email.reportValidity();
-        return;
-    }
-
-    continueBtn.disabled = true;
-    continueBtn.textContent = "ЗАГРУЗКА ОПЛАТЫ...";
-
-    try {
-        const response = await fetch(
-            "https://katarsis-payment-19903dedd.amvera.io/payment-data",
-            {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({
-                    email: email.value.trim()
-                })
-            }
-        );
-
-        const data = await response.json();
-
-        if (!response.ok) {
-            throw new Error(data.error || "Ошибка создания платежа");
-        }
-
-    if (typeof Robokassa === "undefined") {
-            alert("ОШИБКА: скрипт Robokassa не загрузился");
+        if (!email.reportValidity()) {
             return;
         }
 
-            alert("ROBOKASSA JS ЗАГРУЖЕН");
+        const paymentUrl =
+            "https://katarsis-payment-19903dedd.amvera.io/pay?email=" +
+            encodeURIComponent(email.value);
 
-    Robokassa.Render({
-            MerchantLogin: data.MerchantLogin,
-            OutSum: data.OutSum,
-            InvId: data.InvId,
-            Description: data.Description,
-            SignatureValue: data.SignatureValue,
-            Email: data.Email,
-            Culture: "ru",
-            Encoding: "utf-8",
-            IsTest: 1,
+        const telegram = window.Telegram?.WebApp;
 
-            Settings: JSON.stringify({
-                PaymentMethods: ["BankCard", "SBP"],
-                Mode: "modal"
-            })
-        });
-
-        console.error(error);
-
-    alert(
-        "Не удалось открыть оплату. Попробуйте ещё раз."
-    );
-} catch (error) {
-    console.error(error);
-
-    alert(
-        "ОШИБКА ОПЛАТЫ:\n" +
-        (error && error.message ? error.message : String(error))
-    );
-}
-    } finally {
-        continueBtn.disabled = false;
-        continueBtn.textContent = "ПРОДОЛЖИТЬ";
-    }
-});
-
+        if (telegram && telegram.initData) {
+            telegram.openLink(paymentUrl);
+        } else {
+            window.location.assign(paymentUrl);
+        }
+    });
 </script>
 
 </body>
