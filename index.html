@@ -79,11 +79,114 @@
 </section>
 </section>
 <section id="lineup" data-panel hidden aria-labelledby="title-lineup">
-<h1 class="panel-title" id="title-lineup" tabindex="-1">Line-up</h1>
-<div class="empty"><span class="kicker">КАТАРСИС · 26 СЕНТЯБРЯ</span>
-<h2>Скоро объявим участников</h2>
-<p>Музыкальная программа фестиваля появится здесь.</p>
-</div>
+    <h1 class="panel-title" id="title-lineup" tabindex="-1">Line-up</h1>
+
+    <style>
+        .lineup-list {
+            display: grid;
+            gap: 28px;
+        }
+
+        .lineup-card {
+            overflow: hidden;
+            border: 1px solid rgba(120, 145, 170, 0.25);
+            border-radius: 24px;
+            background: linear-gradient(140deg, #101c27, #0b0c18);
+        }
+
+        .lineup-card img {
+            display: block;
+            width: 100%;
+            height: auto;
+        }
+
+        .lineup-copy {
+            padding: 22px;
+        }
+
+        .lineup-copy h2 {
+            margin: 0 0 12px;
+            color: var(--lime);
+            font-size: 24px;
+            line-height: 1.2;
+            font-weight: 600;
+        }
+
+        .lineup-copy p {
+            margin: 0;
+            color: #cbd1cd;
+            font-size: 16px;
+            line-height: 1.75;
+        }
+
+        .lineup-copy strong {
+            color: #f2f4ed;
+            font-weight: 600;
+        }
+    </style>
+
+    <div class="lineup-list">
+        <article class="lineup-card">
+            <img
+                src="kchbs.jpeg"
+                alt="Группа КЧБС — участники Катарсис фест"
+                width="960"
+                height="1280"
+                loading="lazy"
+                decoding="async"
+            >
+            <div class="lineup-copy">
+                <h2>КЧБС</h2>
+                <p>
+                    <strong>Шероховатый инди-рок,</strong>
+                    барабаны, бас, гитары, скрипка, многоголосия,
+                    инструменты с антресоли и
+                    <strong>немного самоиронии</strong>
+                </p>
+            </div>
+        </article>
+
+        <article class="lineup-card">
+            <img
+                src="monaalisa.jpeg"
+                alt="MONAALISA — участница Катарсис фест"
+                width="960"
+                height="1280"
+                loading="lazy"
+                decoding="async"
+            >
+            <div class="lineup-copy">
+                <h2>MONAALISA</h2>
+                <p>
+                    На стыке <strong>Dark Pop, Alternative R&amp;B
+                    и Indie Pop</strong> она создает собственный
+                    саунд и узнаваемый визуальный мир — мрачный,
+                    готический и атмосферный.
+                </p>
+            </div>
+        </article>
+
+        <article class="lineup-card">
+            <img
+                src="varya.jpeg"
+                alt="Варя Кузнецова — участница Катарсис фест"
+                width="960"
+                height="1280"
+                loading="lazy"
+                decoding="async"
+            >
+            <div class="lineup-copy">
+                <h2>Варя Кузнецова</h2>
+                <p>
+                    Пишет о близком и понятном: о нежности,
+                    отношениях, расставаниях и моментах, которые
+                    потом ещё долго прокручиваешь в голове.
+                    По жанру — <strong>мягкий и воздушный поп-рок.</strong>
+                </p>
+            </div>
+        </article>
+    </div>
+</section>
 </section>
 <section id="cinema" data-panel hidden aria-labelledby="title-cinema">
 <h1 class="panel-title" id="title-cinema" tabindex="-1">Кинотеатр</h1>
