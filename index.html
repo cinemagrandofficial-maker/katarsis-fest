@@ -32,7 +32,7 @@
 .about-copy p:first-child{color:#f0f3e9;font-size:18px}
 @media(prefers-reduced-motion:reduce){.about-reveal,.about-copy,.about-plus{transition:none}}
 </style>
-</head>
+<style>#checkout-status{font-size:14px;overflow-wrap:anywhere}.buy:disabled{opacity:.6;cursor:wait}#payment-link{display:block;text-align:center;text-decoration:none;margin-top:15px}#quote-message{color:var(--lime);font-weight:600}</style></head>
 <body>
 <main class="app">
 <a class="brand" href="#home" aria-label="Катарсис фест — главная">
@@ -45,11 +45,26 @@
 </div>
 <div class="purchase">
 <p class="location">26 сентября · Москва · Поляна</p>
-<p class="price">1590 ₽</p>
+<p class="price">1790 ₽</p>
 <div class="purchase-actions">
-<a class="buy" id="buy-contact" href="https://t.me/KATARSIS_fest" target="_blank" rel="noopener">КУПИТЬ БИЛЕТ →</a>
+<button class="buy" id="buy-contact" type="button" aria-controls="checkout-form">КУПИТЬ БИЛЕТ →</button>
 <button class="buy attendance-button" id="attend-btn" type="button">Я ИДУ</button>
 </div>
+<form id="checkout-form" class="buy-form" hidden>
+<h2 class="form-title">Данные для билета</h2>
+<label for="buyer-email">Email *</label><input id="buyer-email" name="email" type="email" autocomplete="email" maxlength="254" required>
+<label for="buyer-name">Имя *</label><input id="buyer-name" name="name" autocomplete="name" maxlength="100" required>
+<label for="buyer-phone">Телефон</label><input id="buyer-phone" name="phone" type="tel" autocomplete="tel" maxlength="40">
+<label for="buyer-promo">Промокод</label><input id="buyer-promo" name="promo_code" maxlength="40" autocapitalize="characters" spellcheck="false" placeholder="Если есть">
+<button class="back" type="button" id="apply-promo">Применить промокод</button>
+<p id="quote-message" role="status">К оплате: 1790 ₽</p>
+<p class="attendance-note">После подтверждения оплаты личный QR-билет придёт в этот Telegram-аккаунт. Чек — на email.</p>
+<button class="buy" type="submit" id="checkout-submit">ПЕРЕЙТИ К ОПЛАТЕ →</button>
+<p id="checkout-status" role="status" aria-live="polite"></p>
+<a class="buy" id="payment-link" hidden target="_blank" rel="noopener">ОТКРЫТЬ ОПЛАТУ →</a>
+<button class="back" type="button" id="new-order" hidden>Создать другой заказ</button>
+<button class="back" type="button" id="close-checkout">Свернуть</button>
+</form>
 <p class="attendance-note">Нажимая «Я иду», ты сохраняешь свой Telegram ID в списке участников организатора. Это отметка намерения прийти, не покупка билета.</p>
 <p id="attendance-status" role="status" aria-live="polite">
 </p>
@@ -187,7 +202,6 @@
         </article>
     </div>
 </section>
-</section>
 <section id="cinema" data-panel hidden aria-labelledby="title-cinema">
 <h1 class="panel-title" id="title-cinema" tabindex="-1">Кинотеатр</h1>
 <div class="empty"><span class="kicker">КАТАРСИС · 26 СЕНТЯБРЯ</span>
@@ -227,12 +241,7 @@
 const attendanceBtn=document.getElementById('attend-btn');
 const attendanceStatus=document.getElementById('attendance-status');
 const telegram=window.Telegram?.WebApp;
-document.getElementById('buy-contact').addEventListener('click',function(event){
- if(telegram?.initData && typeof telegram.openTelegramLink==='function'){
-  event.preventDefault();try{telegram.openTelegramLink(this.href);}catch(_){window.location.assign(this.href);}
- }
-});
-function registered(){attendanceBtn.textContent='Я ИДУ ✓';attendanceBtn.disabled=true;attendanceStatus.textContent='Ты в списке! Для покупки билета напиши организатору.';}
+function registered(){attendanceBtn.textContent='Я ИДУ ✓';attendanceBtn.disabled=true;attendanceStatus.textContent='Ты в списке! Билет можно купить кнопкой выше.';}
 async function attendanceRequest(action){
  const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),20000);
  try{
@@ -270,5 +279,90 @@ aboutToggle.addEventListener('click', () => {
     aboutContent.setAttribute('aria-hidden', String(!expanded));
     aboutToggle.querySelector('.about-hint').textContent = expanded ? 'Свернуть описание' : 'Узнать о фестивале';
 });
+</script>
+
+<script>
+const API='https://katarsis-payment-19903dedd.amvera.io';
+const form=document.getElementById('checkout-form');
+const submit=document.getElementById('checkout-submit');
+const checkoutStatus=document.getElementById('checkout-status');
+const payLink=document.getElementById('payment-link');
+const newOrder=document.getElementById('new-order');
+let requestKey=null, orderId=null, pollTimer=null, quoteVersion=0;
+const orderStorageKey='katarsis-order-'+(telegram?.initDataUnsafe?.user?.id||'current');
+function openCheckout(){form.hidden=false;form.scrollIntoView({behavior:'smooth',block:'start'});}
+document.getElementById('buy-contact').addEventListener('click',openCheckout);
+document.getElementById('close-checkout').addEventListener('click',()=>{form.hidden=true;});
+async function apiPost(path,data){
+ const ctrl=new AbortController();const timer=setTimeout(()=>ctrl.abort(),30000);
+ try{
+  const r=await fetch(API+path,{method:'POST',headers:{'Content-Type':'application/json'},signal:ctrl.signal,body:JSON.stringify(data)});
+  const result=await r.json();if(!r.ok)throw new Error(result.error||'Сервис временно недоступен. Попробуй ещё раз.');return result;
+ }finally{clearTimeout(timer);}
+}
+function errorText(e){return e.name==='AbortError'||e instanceof TypeError?'Сервер не ответил. Проверь интернет или VPN и повтори попытку. Если уже оплатил — не плати повторно, проверь «Мои билеты» в боте.':e.message;}
+async function updateQuote(){
+ const version=++quoteVersion;const el=document.getElementById('quote-message');
+ el.textContent='Проверяем цену…';
+ try{const q=await apiPost('/payment/quote',{promo_code:form.elements.promo_code.value});
+  if(version!==quoteVersion)return;
+  el.textContent=q.discount?`Скидка ${q.discount} ₽ · К оплате: ${q.amount} ₽`:`К оплате: ${q.amount} ₽`;
+ }catch(e){if(version===quoteVersion)el.textContent=errorText(e);}
+}
+document.getElementById('apply-promo').addEventListener('click',updateQuote);
+form.elements.promo_code.addEventListener('input',()=>{quoteVersion++;document.getElementById('quote-message').textContent='Нажми «Применить промокод», чтобы проверить цену.';});
+function lockFields(locked){for(const input of form.querySelectorAll('input'))input.disabled=locked;document.getElementById('apply-promo').disabled=locked;}
+function showLink(url){
+ try{const u=new URL(url);if(u.protocol!=='https:')throw new Error();payLink.href=u.href;payLink.hidden=false;}
+ catch(_){checkoutStatus.textContent='Некорректная ссылка оплаты. Свяжись с организатором.';}
+}
+async function checkOrder(){
+ if(!orderId)return;
+ try{const r=await apiPost('/payment/status',{order_id:orderId,init_data:telegram?.initData||''});
+  if(r.status==='paid'){checkoutStatus.textContent='БИЛЕТ КУПЛЕН ✓ Открой бот: QR-билет придёт сообщением. Он также доступен в «Мои билеты».';payLink.hidden=true;newOrder.hidden=false;return;}
+  if(r.status!=='pending'){checkoutStatus.textContent='Заказ завершён: '+(r.status==='expired'?'срок оплаты истёк.':'статус требует проверки организатором.');payLink.hidden=true;newOrder.hidden=false;return;}
+  if(r.payment_url){showLink(r.payment_url);checkoutStatus.textContent=`К оплате ${r.amount} ₽. Нажми «Открыть оплату». После оплаты вернись в бот.`;}
+ }catch(e){checkoutStatus.textContent=errorText(e);}
+ pollTimer=setTimeout(checkOrder,10000);
+}
+form.addEventListener('submit',async event=>{
+ event.preventDefault();
+ if(!telegram?.initData){checkoutStatus.textContent='Открой мини-приложение через кнопку под сообщением бота — так билет придёт именно тебе.';return;}
+ if(!form.reportValidity())return;
+ const data=Object.fromEntries(new FormData(form));
+ if(!data.name?.trim()){checkoutStatus.textContent='Укажи имя';return;}
+ requestKey=requestKey||crypto.randomUUID();
+ submit.disabled=true;lockFields(true);checkoutStatus.textContent='Создаём заказ…';
+ try{
+  const result=await apiPost('/create-payment',{...data,init_data:telegram.initData,request_key:requestKey});
+  orderId=result.order_id;newOrder.hidden=false;
+  try{sessionStorage.setItem(orderStorageKey,String(orderId));}catch(_){}
+  if(result.payment_url){showLink(result.payment_url);checkoutStatus.textContent=`К оплате ${result.amount} ₽. Нажми «Открыть оплату».`;}
+  else checkoutStatus.textContent='Банк готовит ссылку. Подожди, проверяем заказ…';
+  clearTimeout(pollTimer);pollTimer=setTimeout(checkOrder,3000);
+ }catch(e){checkoutStatus.textContent=errorText(e);submit.disabled=false;lockFields(false);}
+});
+// Preserve the same request key across retries; changing details deliberately starts another order.
+form.addEventListener('input',()=>{if(!orderId)requestKey=null;});
+newOrder.addEventListener('click',()=>{
+ if(orderId&&!confirm('Если ты уже оплатил, сначала проверь «Мои билеты» в боте. Создать отдельный новый заказ?'))return;
+ clearTimeout(pollTimer);orderId=null;requestKey=null;payLink.hidden=true;
+ try{sessionStorage.removeItem(orderStorageKey);}catch(_){}newOrder.hidden=true;
+ submit.disabled=false;lockFields(false);checkoutStatus.textContent='';
+});
+payLink.addEventListener('click',event=>{
+ if(telegram?.initData&&typeof telegram.openLink==='function'){
+  event.preventDefault();try{telegram.openLink(payLink.href);}catch(_){window.location.assign(payLink.href);}
+ }
+});
+try{
+ const stored=Number(sessionStorage.getItem(orderStorageKey));
+ if(telegram?.initData && Number.isSafeInteger(stored) && stored>0){
+  orderId=stored;submit.disabled=true;lockFields(true);newOrder.hidden=false;
+  form.hidden=false;checkOrder();
+ }
+}catch(_){}
+if(location.hash==='#buy')openCheckout();
+window.addEventListener('hashchange',()=>{if(location.hash==='#buy')openCheckout();});
 </script>
 </body></html>
